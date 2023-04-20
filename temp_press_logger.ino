@@ -20,7 +20,7 @@ uint32_t m;
 #define TC_ADDRESS_2 (0x67)
 
 // the digital pins that connect to the LEDs
-#define redLEDpin 2
+#define redLEDpin   4 
 #define greenLEDpin 3
 
 // The analog pins that connect to the sensors
@@ -65,18 +65,11 @@ void setup(void)
 
   if (! RTC.begin()) 
   {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
-    while (1){ 
-      digitalWrite(redLEDpin, HIGH);
-      delay(500);
-      digitalWrite(redLEDpin, LOW);
-      delay(500);
-    }
+    error("RTC failed");
   }
   
   #if SET_TIME
-    RTC.adjust(DateTime(2023, 4, 20, 14, 58, 30));
+    RTC.adjust(DateTime(2023, 4, 20, 16, 56, 30)); // takes about 8 seconds to save the time
   //  RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   #endif //SET_TIME
   RTC.start();
