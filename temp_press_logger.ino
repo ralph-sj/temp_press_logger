@@ -11,6 +11,7 @@ uint32_t syncTime = 0; // time of last sync()
 #define ECHO_TO_SERIAL   1
 #define WAIT_TO_START    0 
 #define PRINT_TO_FILE    1
+#define SET_TIME         1
 
 // the digital pins that connect to the LEDs
 #define redLEDpin 2
@@ -24,7 +25,7 @@ uint32_t syncTime = 0; // time of last sync()
 #define aref_voltage 3.3         // we tie 3.3V to ARef and measure it with a multimeter!
 #define bandgap_voltage 1.1      // this is not super guaranteed but its not -too- off
 
-RTC_DS1307 RTC; // define the Real Time Clock object
+RTC_PCF8523 rtc;
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
 const int chipSelect = 10;
@@ -80,9 +81,14 @@ void setup(void)
         logfile = SD.open(filename, FILE_WRITE); 
         break;  // leave the loop!
       }
-     }
+    }
   #endif //PRINT_TO_FILE
 
+  #if SET_TIME
+    rtc.adjust(DateTime(2023, 4, 20, 13, 27, 0));
+    Serial.println("Date set");
+  #endif //SET_TIME
+  rtc.start();
   
   if (! logfile) {
     error("couldnt create file");
@@ -93,7 +99,7 @@ void setup(void)
 
   // connect to RTC
   Wire.begin();  
-  if (!RTC.begin()) {
+  if (!rtc.begin()) {
     logfile.println("RTC failed");
     #if ECHO_TO_SERIAL
       Serial.println("RTC failed");
@@ -109,10 +115,8 @@ void setup(void)
     analogReference(EXTERNAL);
 }
 
-void loop(void)
-{
+void loop(void){
   DateTime now;
-
   // delay for the amount of time we want between readings
   delay((LOG_INTERVAL -1) - (millis() % LOG_INTERVAL));
   
@@ -128,7 +132,7 @@ void loop(void)
   #endif
 
   // fetch the time
-  now = RTC.now();
+  now = rtc.now();
   // log time
   logfile.print(now.unixtime()); // seconds since 1/1/1970
   logfile.print(", ");
