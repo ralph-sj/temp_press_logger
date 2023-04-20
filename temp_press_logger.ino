@@ -72,8 +72,9 @@ void setup(void)
   }
   
   #if SET_TIME
-    RTC.adjust(DateTime(2023, 4, 20, 21, 40, 0)); // takes about 8 seconds to save the time
+    RTC.adjust(DateTime(2023, 4, 20, 21, 54, 30)); // takes about 13  seconds to save the time
   //  RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    Serial.println("Date set.");
   #endif //SET_TIME
   RTC.start();
   
