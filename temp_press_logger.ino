@@ -42,6 +42,8 @@ const int chipSelect = 10;
 File logfile;
 float temp_cold = 0;
 float temp_hot =0;
+float temp_cold2 = 0;
+float temp_hot2 =0;
 
 void error(char *str)
 {
@@ -127,9 +129,9 @@ void setup(void)
     #endif  //ECHO_TO_SERIAL
   } 
 
-  logfile.println("datetime,temp_cold, temp_hot");    
+  logfile.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2");
   #if ECHO_TO_SERIAL
-    Serial.println("datetime,temp_cold, temp_hot");
+    Serial.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2");
   #endif //ECHO_TO_SERIAL
  
   // If you want to set the aref to something other than 5v
@@ -226,6 +228,8 @@ void loop(void){
   #if READ_TEMPERATURE
     temp_cold = mcp.readAmbient();
     temp_hot = mcp.readThermocouple();
+    temp_cold2 = mcp2.readAmbient();
+    temp_hot2 = mcp2.readThermocouple();
   #endif //READ_TEMPERATURE
   // log time
   #if PRINT_TO_FILE    
@@ -240,6 +244,10 @@ void loop(void){
     logfile.print(temp_cold);
     logfile.print(",");
     logfile.print(temp_hot);
+    logfile.print(",");
+    logfile.print(temp_cold2);
+    logfile.print(",");
+    logfile.print(temp_hot2);
     logfile.println();
   #endif //PRINT_TO_FILE
   #if ECHO_TO_SERIAL
@@ -274,6 +282,10 @@ void loop(void){
     Serial.print(temp_cold);
     Serial.print(",");
     Serial.print(temp_hot);
+    Serial.print(",");
+    Serial.print(temp_cold2);
+    Serial.print(",");
+    Serial.print(temp_hot2);
     Serial.println();
   #endif //ECHO_TO_SERIAL
 
