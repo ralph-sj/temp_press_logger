@@ -8,10 +8,11 @@
 #define SYNC_INTERVAL 1000 // mills between calls to flush() - to write data to the card
 uint32_t syncTime = 0; // time of last sync()
 
-#define ECHO_TO_SERIAL   1
-#define WAIT_TO_START    0 
-#define PRINT_TO_FILE    1
-#define SET_TIME         1
+#define ECHO_TO_SERIAL  1
+#define WAIT_TO_START   0 
+#define PRINT_TO_FILE   0 
+#define SET_TIME        1
+#define SET_TIME        1
 
 // the digital pins that connect to the LEDs
 #define redLEDpin 2
@@ -93,16 +94,18 @@ void setup(void)
         logfile = SD.open(filename, FILE_WRITE); 
         break;  // leave the loop!
       }
-     }
-  #endif //PRINT_TO_FILE
-
+    }
   
-  if (! logfile) {
-    error("couldnt create file");
-  }
+    if (! logfile) {
+      error("couldnt create file");
+    }
 
-  Serial.print("Logging to: ");
-  Serial.println(filename);
+    Serial.print("Logging to: ");
+    Serial.println(filename);
+  #else
+    Serial.println("WARNING: NOT PRINTING TO FILE");
+    delay(1000);
+  #endif //PRINT_TO_FILE
 
   // connect to RTC
   Wire.begin();  
@@ -122,10 +125,8 @@ void setup(void)
     analogReference(EXTERNAL);
 }
 
-void loop(void)
-{
+void loop(void){
   DateTime now;
-
   // delay for the amount of time we want between readings
   delay((LOG_INTERVAL -1) - (millis() % LOG_INTERVAL));
   
@@ -143,21 +144,23 @@ void loop(void)
   // fetch the time
   now = RTC.now();
   // log time
-  logfile.print(now.unixtime()); // seconds since 1/1/1970
-  logfile.print(", ");
-  logfile.print('"');
-  logfile.print(now.year(), DEC);
-  logfile.print("/");
-  logfile.print(now.month(), DEC);
-  logfile.print("/");
-  logfile.print(now.day(), DEC);
-  logfile.print(" ");
-  logfile.print(now.hour(), DEC);
-  logfile.print(":");
-  logfile.print(now.minute(), DEC);
-  logfile.print(":");
-  logfile.print(now.second(), DEC);
-  logfile.print('"');
+  #if PRINT_TO_FILE    
+    logfile.print(now.unixtime()); // seconds since 1/1/1970
+    logfile.print(", ");
+    logfile.print('"');
+    logfile.print(now.year(), DEC);
+    logfile.print("/");
+    logfile.print(now.month(), DEC);
+    logfile.print("/");
+    logfile.print(now.day(), DEC);
+    logfile.print(" ");
+    logfile.print(now.hour(), DEC);
+    logfile.print(":");
+    logfile.print(now.minute(), DEC);
+    logfile.print(":");
+    logfile.print(now.second(), DEC);
+    logfile.print('"');
+  #endif //PRINT_TO_FILE
   #if ECHO_TO_SERIAL
     Serial.print(now.unixtime()); // seconds since 1/1/1970
     Serial.print(", ");
