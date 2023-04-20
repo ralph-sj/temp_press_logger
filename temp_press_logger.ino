@@ -12,10 +12,10 @@ uint32_t syncTime = 0; // time of last sync()
 
 #define ECHO_TO_SERIAL  1
 #define WAIT_TO_START   0 
-#define PRINT_TO_FILE   0 
+#define PRINT_TO_FILE   1 
 #define SET_TIME        1
 #define SET_TIME        1
-#define READ_TEMPERATURE 0 
+#define READ_TEMPERATURE 1 
 
 #define TC_ADDRESS_1 (0x60)
 #define TC_ADDRESS_2 (0x67)
@@ -172,6 +172,7 @@ void setup(void)
     Serial.print("Filter coefficient value set to: ");
     Serial.println(mcp.getFilterCoefficient());
 
+    mcp.enable(true);
     //  if (! mcp2.begin(TC_ADDRESS_2)) {
     //      Serial.println("Sensor 1 not found. Check wiring!");
     //      while (1);
@@ -191,7 +192,6 @@ void loop(void){
   // fetch the time
   now = RTC.now();
   #if READ_TEMPERATURE
-    mcp.begin(TC_ADDRESS_1);
     temp_cold = mcp.readAmbient();
     temp_hot = mcp.readThermocouple();
   #endif //READ_TEMPERATURE
