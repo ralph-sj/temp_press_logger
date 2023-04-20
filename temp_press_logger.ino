@@ -15,9 +15,19 @@ uint32_t m;
 #define PRINT_TO_FILE   1 
 #define SET_TIME        0 
 #define READ_TEMPERATURE 1 
-
+#define READ_PRESSURE    0
 #define TC_ADDRESS_1 (0x60)
 #define TC_ADDRESS_2 (0x67)
+
+#define ADC_bits      10// for analogRead
+
+const int PressureScale = 20; //5V = 100bar
+int PressurePin1 = A0;
+int PressurePin2 = A1;
+int PressureVolt1 = 0;
+int PressureVolt2 = 0;
+float Pressure1 = 0;
+float Pressure2 = 0;
 
 // the digital pins that connect to the LEDs
 #define redLEDpin   4 
@@ -178,9 +188,9 @@ void setup(void)
     delay(1000);
   #endif
   
-  logfile.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, millis");
+  logfile.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, pressure1, pressure2, millis");
   #if ECHO_TO_SERIAL
-    Serial.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, millis");
+    Serial.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, pressure1, pressure2, millis");
   #endif //ECHO_TO_SERIAL
  
   // If you want to set the aref to something other than 5v
@@ -264,6 +274,11 @@ void setup(void)
 
     Serial.println("Found MCP9600!");
   #endif //READ_TEMPERATURE
+
+  #if READ_PRESSURE
+    pinMode(PressurePin1, INPUT)  
+    pinMode(PressurePin2, INPUT)  
+  #endif //READ_PRESSURE
 }
 
 void loop(void){
@@ -280,7 +295,14 @@ void loop(void){
     temp_cold2 = mcp2.readAmbient();
     temp_hot2 = mcp2.readThermocouple();
   #endif //READ_TEMPERATURE
-  // log time
+  
+  #if READ_PRESSURE
+    PressureVolt1 = analogRead(PressurePin1);  
+    PressureVolt2 = analogRead(PressurePin2);  
+    Pressure1 = float(PressureVolt1 * PressureScale)>> ADC_bits;
+    Pressure2 = float(PressureVolt2 * PressureScale)>> ADC_bits;
+  #endif //READ_PRESSURE
+
   #if PRINT_TO_FILE    
     logfile.print(now.year(), DEC);
     if (now.month() < 10)
@@ -317,6 +339,10 @@ void loop(void){
     logfile.print(temp_cold2);
     logfile.print(",");
     logfile.print(temp_hot2);
+    logfile.print(",");    
+    logfile.print(Pressure1);
+    logfile.print(",");    
+    logfile.print(Pressure2);
     logfile.print(",");    
     m = millis();
     logfile.print(m);           // milliseconds since start
@@ -358,6 +384,10 @@ void loop(void){
     Serial.print(temp_cold2);
     Serial.print(",");
     Serial.print(temp_hot2);
+    Serial.print(",");    
+    Serial.print(Pressure1);
+    Serial.print(",");    
+    Serial.print(Pressure2);
     Serial.print(",");    
     m = millis();
     Serial.print(m);           // milliseconds since start
