@@ -15,7 +15,7 @@ uint32_t m;
 #define PRINT_TO_FILE       0 
 #define SET_TIME            0 
 #define READ_TEMPERATURE    1 
-#define READ_PRESSURE       0 
+#define READ_PRESSURE       1 
 #define TC_ADDRESS_1        (0x60)
 #define TC_ADDRESS_2        (0x67)
 #define ADC_bits            10// for analogRead
@@ -77,8 +77,6 @@ void setup(void)
   #endif //SET_TIME
   RTC.start();
   
-  pinMode(redLEDpin, OUTPUT);
-  pinMode(greenLEDpin, OUTPUT);
   
   #if WAIT_TO_START
     Serial.println("Type any character to start");
