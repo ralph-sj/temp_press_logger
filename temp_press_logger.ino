@@ -11,6 +11,7 @@ uint32_t syncTime = 0; // time of last sync()
 #define ECHO_TO_SERIAL   1
 #define WAIT_TO_START    0 
 #define PRINT_TO_FILE    1
+#define SET_TIME         1
 
 // the digital pins that connect to the LEDs
 #define redLEDpin 2
@@ -24,7 +25,7 @@ uint32_t syncTime = 0; // time of last sync()
 #define aref_voltage 3.3         // we tie 3.3V to ARef and measure it with a multimeter!
 #define bandgap_voltage 1.1      // this is not super guaranteed but its not -too- off
 
-RTC_DS1307 RTC; // define the Real Time Clock object
+RTC_PCF8523 RTC; // define the Real Time Clock object
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
 const int chipSelect = 10;
@@ -45,9 +46,21 @@ void error(char *str)
 
 void setup(void)
 {
+
   Serial.begin(9600);
   Serial.println();
+
+  if (! RTC.begin()) {
+    Serial.println("Couldn't find RTC");
+    Serial.flush();
+    while (1) delay(10);
+  }
   
+  #if SET_TIME
+    RTC.adjust(DateTime(2023, 4, 20, 13, 41, 0));
+  #endif //SET_TIME
+  RTC.start();
+
   // use debugging LEDs
   pinMode(redLEDpin, OUTPUT);
   pinMode(greenLEDpin, OUTPUT);
