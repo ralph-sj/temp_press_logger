@@ -8,13 +8,12 @@
 
 #define LOG_INTERVAL  100 // mills between entries (reduce to take more/faster data)
 #define SYNC_INTERVAL 1000 // mills between calls to flush() - to write data to the card
-uint32_t syncTime = 0; // time of last sync()
-
-#define ECHO_TO_SERIAL  1
+uint32_t syncTime = 0; // time of last sync(
+uint32_t m;
+#define ECHO_TO_SERIAL  1 
 #define WAIT_TO_START   0 
 #define PRINT_TO_FILE   1 
 #define SET_TIME        0 
-#define SET_TIME        1
 #define READ_TEMPERATURE 1 
 
 #define TC_ADDRESS_1 (0x60)
@@ -44,6 +43,8 @@ float temp_cold = 0;
 float temp_hot =0;
 float temp_cold2 = 0;
 float temp_hot2 =0;
+DateTime starttime; 
+
 
 void error(char *str)
 {
@@ -66,7 +67,12 @@ void setup(void)
   {
     Serial.println("Couldn't find RTC");
     Serial.flush();
-    while (1) delay(10);
+    while (1){ 
+      digitalWrite(redLEDpin, HIGH);
+      delay(500);
+      digitalWrite(redLEDpin, LOW);
+      delay(500);
+    }
   }
   
   #if SET_TIME
@@ -74,8 +80,7 @@ void setup(void)
   //  RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   #endif //SET_TIME
   RTC.start();
-
-  // use debugging LEDs
+  
   pinMode(redLEDpin, OUTPUT);
   pinMode(greenLEDpin, OUTPUT);
   
@@ -84,6 +89,36 @@ void setup(void)
     while (!Serial.available());
   #endif //WAIT_TO_START
 
+  starttime  = RTC.now();
+  Serial.print("Logger started at ");
+  Serial.print(starttime.year(), DEC);
+  if (starttime.month() < 10)
+  {
+    Serial.print("0");
+  }
+  Serial.print(starttime.month(), DEC);
+  if (starttime.day() < 10)
+  {
+    Serial.print("0");
+  }
+  Serial.print(starttime.day(), DEC);
+  Serial.print("_");
+  if (starttime.hour() < 10)
+  {
+    Serial.print("0");
+  }
+  Serial.print(starttime.hour(), DEC);
+  if (starttime.minute() < 10)
+  {
+    Serial.print("0");
+  }
+  Serial.print(starttime.minute(), DEC);
+  if (starttime.second() < 10)
+  {
+    Serial.print("0");
+  }
+  Serial.print(starttime.second(), DEC);
+  Serial.println();
   #if PRINT_TO_FILE
     // initialize the SD card
     Serial.print("Initializing SD card...");
@@ -115,23 +150,44 @@ void setup(void)
 
     Serial.print("Logging to: ");
     Serial.println(filename);
-  #else
-    Serial.println("WARNING: NOT PRINTING TO FILE");
+
+    logfile.print(starttime.year(), DEC);
+    if (starttime.month() < 10)
+    {
+      Serial.print("0");
+    }
+    logfile.print(starttime.month(), DEC);
+    if (starttime.day() < 10)
+    {
+      Serial.print("0");
+    }
+    logfile.print(starttime.day(), DEC);
+    logfile.print("_");
+    if (starttime.hour() < 10)
+    {
+      Serial.print("0");
+    }
+    logfile.print(starttime.hour(), DEC);
+    if (starttime.minute() < 10)
+    {
+      Serial.print("0");
+    }
+    logfile.print(starttime.minute(), DEC);
+    if (starttime.second() < 10)
+    {
+      Serial.print("0");
+    }
+    logfile.print(starttime.second(), DEC);
+    logfile.println();
+  #else //PRINT_TO_FILE
+    Serial.println("WARNING: DATA NOT LOGGED TO FILE");
+    Serial.println();
     delay(1000);
-  #endif //PRINT_TO_FILE
-
-  // connect to RTC
-  Wire.begin();  
-  if (!RTC.begin()) {
-    logfile.println("RTC failed");
-    #if ECHO_TO_SERIAL
-      Serial.println("RTC failed");
-    #endif  //ECHO_TO_SERIAL
-  } 
-
-  logfile.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2");
+  #endif
+  
+  logfile.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, millis");
   #if ECHO_TO_SERIAL
-    Serial.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2");
+    Serial.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, millis");
   #endif //ECHO_TO_SERIAL
  
   // If you want to set the aref to something other than 5v
@@ -234,11 +290,31 @@ void loop(void){
   // log time
   #if PRINT_TO_FILE    
     logfile.print(now.year(), DEC);
+    if (now.month() < 10)
+    {
+      Serial.print("0");
+    }
     logfile.print(now.month(), DEC);
+    if (now.day() < 10)
+    {
+      Serial.print("0");
+    }
     logfile.print(now.day(), DEC);
     logfile.print("_");
+    if (now.hour() < 10)
+    {
+      Serial.print("0");
+    }
     logfile.print(now.hour(), DEC);
+    if (now.minute() < 10)
+    {
+      Serial.print("0");
+    }
     logfile.print(now.minute(), DEC);
+    if (now.second() < 10)
+    {
+      Serial.print("0");
+    }
     logfile.print(now.second(), DEC);
     logfile.print(",");
     logfile.print(temp_cold);
@@ -248,6 +324,9 @@ void loop(void){
     logfile.print(temp_cold2);
     logfile.print(",");
     logfile.print(temp_hot2);
+    logfile.print(",");    
+    m = millis();
+    logfile.print(m);           // milliseconds since start
     logfile.println();
   #endif //PRINT_TO_FILE
   #if ECHO_TO_SERIAL
@@ -286,6 +365,9 @@ void loop(void){
     Serial.print(temp_cold2);
     Serial.print(",");
     Serial.print(temp_hot2);
+    Serial.print(",");    
+    m = millis();
+    Serial.print(m);           // milliseconds since start
     Serial.println();
   #endif //ECHO_TO_SERIAL
 
