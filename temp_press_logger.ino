@@ -10,36 +10,29 @@
 #define SYNC_INTERVAL 1000 // mills between calls to flush() - to write data to the card
 uint32_t syncTime = 0; // time of last sync(
 uint32_t m;
-#define ECHO_TO_SERIAL  1 
-#define WAIT_TO_START   0 
-#define PRINT_TO_FILE   1 
-#define SET_TIME        0 
-#define READ_TEMPERATURE 1 
-#define READ_PRESSURE    0
-#define TC_ADDRESS_1 (0x60)
-#define TC_ADDRESS_2 (0x67)
-
-#define ADC_bits      10// for analogRead
+#define ECHO_TO_SERIAL      1 
+#define WAIT_TO_START       0 
+#define PRINT_TO_FILE       0 
+#define SET_TIME            0 
+#define READ_TEMPERATURE    1 
+#define READ_PRESSURE       0 
+#define TC_ADDRESS_1        (0x60)
+#define TC_ADDRESS_2        (0x67)
+#define ADC_bits            10// for analogRead
+#define AdcRange            1024 // for analogRead
 
 const int PressureScale = 20; //5V = 100bar
-int PressurePin1 = A0;
-int PressurePin2 = A1;
+const int PressurePin1 = A0;
+const int PressurePin2 = A1;
 int PressureVolt1 = 0;
 int PressureVolt2 = 0;
-float Pressure1 = 0;
-float Pressure2 = 0;
+int Pressure1 = 0;
+int Pressure2 = 0;
 
 // the digital pins that connect to the LEDs
 #define redLEDpin   4 
 #define greenLEDpin 3
 
-// The analog pins that connect to the sensors
-#define photocellPin 0           // analog 0
-#define tempPin 1                // analog 1
-#define BANDGAPREF 14            // special indicator that we want to measure the bandgap
-
-#define aref_voltage 3.3         // we tie 3.3V to ARef and measure it with a multimeter!
-#define bandgap_voltage 1.1      // this is not super guaranteed but its not -too- off
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
 Adafruit_MCP9600 mcp, mcp2;
@@ -275,10 +268,6 @@ void setup(void)
     Serial.println("Found MCP9600!");
   #endif //READ_TEMPERATURE
 
-  #if READ_PRESSURE
-    pinMode(PressurePin1, INPUT)  
-    pinMode(PressurePin2, INPUT)  
-  #endif //READ_PRESSURE
 }
 
 void loop(void){
@@ -299,8 +288,8 @@ void loop(void){
   #if READ_PRESSURE
     PressureVolt1 = analogRead(PressurePin1);  
     PressureVolt2 = analogRead(PressurePin2);  
-    Pressure1 = float(PressureVolt1 * PressureScale)>> ADC_bits;
-    Pressure2 = float(PressureVolt2 * PressureScale)>> ADC_bits;
+    Pressure1 = (PressureVolt1 * PressureScale)/AdcRange;
+    Pressure2 = (PressureVolt2 * PressureScale)/AdcRange;
   #endif //READ_PRESSURE
 
   #if PRINT_TO_FILE    
@@ -385,9 +374,9 @@ void loop(void){
     Serial.print(",");
     Serial.print(temp_hot2);
     Serial.print(",");    
-    Serial.print(Pressure1);
+    Serial.print(PressureVolt1);
     Serial.print(",");    
-    Serial.print(Pressure2);
+    Serial.print(PressureVolt2);
     Serial.print(",");    
     m = millis();
     Serial.print(m);           // milliseconds since start
