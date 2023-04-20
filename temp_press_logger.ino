@@ -2,7 +2,9 @@
 #include <SD.h>
 #include <Wire.h>
 #include "RTClib.h"
-
+#include <Adafruit_I2CDevice.h>
+#include <Adafruit_I2CRegister.h>
+#include "Adafruit_MCP9600.h"
 
 #define LOG_INTERVAL  100 // mills between entries (reduce to take more/faster data)
 #define SYNC_INTERVAL 1000 // mills between calls to flush() - to write data to the card
@@ -13,6 +15,10 @@ uint32_t syncTime = 0; // time of last sync()
 #define PRINT_TO_FILE   0 
 #define SET_TIME        1
 #define SET_TIME        1
+#define READ_TEMPERATURE 0 
+
+#define TC_ADDRESS_1 (0x60)
+#define TC_ADDRESS_2 (0x67)
 
 // the digital pins that connect to the LEDs
 #define redLEDpin 2
@@ -27,12 +33,15 @@ uint32_t syncTime = 0; // time of last sync()
 #define bandgap_voltage 1.1      // this is not super guaranteed but its not -too- off
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
+Adafruit_MCP9600 mcp;
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
 const int chipSelect = 10;
 
 // the logging file
 File logfile;
+float temp_cold = 0;
+float temp_hot =0;
 
 void error(char *str)
 {
@@ -51,7 +60,8 @@ void setup(void)
   Serial.begin(9600);
   Serial.println();
 
-  if (! RTC.begin()) {
+  if (! RTC.begin()) 
+  {
     Serial.println("Couldn't find RTC");
     Serial.flush();
     while (1) delay(10);
@@ -116,110 +126,125 @@ void setup(void)
     #endif  //ECHO_TO_SERIAL
   } 
 
-  logfile.println("millis,stamp,datetime,light,temp,vcc");    
+  logfile.println("datetime,temp_cold, temp_hot");    
   #if ECHO_TO_SERIAL
-    Serial.println("millis,stamp,datetime,light,temp,vcc");
+    Serial.println("datetime,temp_cold, temp_hot");
   #endif //ECHO_TO_SERIAL
  
   // If you want to set the aref to something other than 5v
     analogReference(EXTERNAL);
+
+  // Thermocouple
+  #if READ_TEMPERATURE
+    Serial.println("MCP9600 HW test");
+      
+    // TC1
+    /* Initialise the driver with I2C_ADDRESS and the default I2C bus. */
+    if (! mcp.begin(TC_ADDRESS_1)) {
+        Serial.println("Sensor 1 not found. Check wiring!");
+        while (1);
+    }
+    mcp.setADCresolution(MCP9600_ADCRESOLUTION_18);
+    Serial.print("ADC resolution set to ");
+    switch (mcp.getADCresolution()) {
+      case MCP9600_ADCRESOLUTION_18:   Serial.print("18"); break;
+      case MCP9600_ADCRESOLUTION_16:   Serial.print("16"); break;
+      case MCP9600_ADCRESOLUTION_14:   Serial.print("14"); break;
+      case MCP9600_ADCRESOLUTION_12:   Serial.print("12"); break;
+    }
+    Serial.println(" bits");
+
+    mcp.setThermocoupleType(MCP9600_TYPE_K);
+    Serial.print("Thermocouple type set to ");
+    switch (mcp.getThermocoupleType()) {
+      case MCP9600_TYPE_K:  Serial.print("K"); break;
+      case MCP9600_TYPE_J:  Serial.print("J"); break;
+      case MCP9600_TYPE_T:  Serial.print("T"); break;
+      case MCP9600_TYPE_N:  Serial.print("N"); break;
+      case MCP9600_TYPE_S:  Serial.print("S"); break;
+      case MCP9600_TYPE_E:  Serial.print("E"); break;
+      case MCP9600_TYPE_B:  Serial.print("B"); break;
+      case MCP9600_TYPE_R:  Serial.print("R"); break;
+    }
+    Serial.println(" type");
+
+    mcp.setFilterCoefficient(3);
+    Serial.print("Filter coefficient value set to: ");
+    Serial.println(mcp.getFilterCoefficient());
+
+    //  if (! mcp2.begin(TC_ADDRESS_2)) {
+    //      Serial.println("Sensor 1 not found. Check wiring!");
+    //      while (1);
+    //  }
+    //  mcp2.enable(false);
+
+    Serial.println("Found MCP9600!");
+  #endif //READ_TEMPERATURE
 }
 
 void loop(void){
   DateTime now;
   // delay for the amount of time we want between readings
   delay((LOG_INTERVAL -1) - (millis() % LOG_INTERVAL));
-  
   digitalWrite(greenLEDpin, HIGH);
-  
-  // log milliseconds since starting
-  uint32_t m = millis();
-  logfile.print(m);           // milliseconds since start
-  logfile.print(", ");    
-  #if ECHO_TO_SERIAL
-    Serial.print(m);         // milliseconds since start
-    Serial.print(", ");  
-  #endif
 
   // fetch the time
   now = RTC.now();
+  #if READ_TEMPERATURE
+    mcp.begin(TC_ADDRESS_1);
+    temp_cold = mcp.readAmbient();
+    temp_hot = mcp.readThermocouple();
+  #endif //READ_TEMPERATURE
   // log time
   #if PRINT_TO_FILE    
-    logfile.print(now.unixtime()); // seconds since 1/1/1970
-    logfile.print(", ");
-    logfile.print('"');
     logfile.print(now.year(), DEC);
-    logfile.print("/");
     logfile.print(now.month(), DEC);
-    logfile.print("/");
     logfile.print(now.day(), DEC);
-    logfile.print(" ");
+    logfile.print("_");
     logfile.print(now.hour(), DEC);
-    logfile.print(":");
     logfile.print(now.minute(), DEC);
-    logfile.print(":");
     logfile.print(now.second(), DEC);
-    logfile.print('"');
+    logfile.print(",");
+    logfile.print(temp_cold);
+    logfile.print(",");
+    logfile.print(temp_hot);
+    logfile.println();
   #endif //PRINT_TO_FILE
   #if ECHO_TO_SERIAL
-    Serial.print(now.unixtime()); // seconds since 1/1/1970
-    Serial.print(", ");
-    Serial.print('"');
     Serial.print(now.year(), DEC);
-    Serial.print("/");
+    if (now.month() < 10)
+    {
+      Serial.print("0");
+    }
     Serial.print(now.month(), DEC);
-    Serial.print("/");
+    if (now.day() < 10)
+    {
+      Serial.print("0");
+    }
     Serial.print(now.day(), DEC);
-    Serial.print(" ");
+    Serial.print("_");
+    if (now.hour() < 10)
+    {
+      Serial.print("0");
+    }
     Serial.print(now.hour(), DEC);
-    Serial.print(":");
+    if (now.minute() < 10)
+    {
+      Serial.print("0");
+    }
     Serial.print(now.minute(), DEC);
-    Serial.print(":");
+    if (now.second() < 10)
+    {
+      Serial.print("0");
+    }
     Serial.print(now.second(), DEC);
-    Serial.print('"');
-  #endif //ECHO_TO_SERIAL
-
-  analogRead(photocellPin);
-  delay(10); 
-  int photocellReading = analogRead(photocellPin);  
-  
-  analogRead(tempPin); 
-  delay(10);
-  int tempReading = analogRead(tempPin);    
-  
-  // converting that reading to voltage, for 3.3v arduino use 3.3, for 5.0, use 5.0
-  float voltage = tempReading * aref_voltage / 1024;  
-  float temperatureC = (voltage - 0.5) * 100 ;
-  float temperatureF = (temperatureC * 9 / 5) + 32;
-  
-  logfile.print(", ");    
-  logfile.print(photocellReading);
-  logfile.print(", ");    
-  logfile.print(temperatureF);
-  #if ECHO_TO_SERIAL
-    Serial.print(", ");   
-    Serial.print(photocellReading);
-    Serial.print(", ");    
-    Serial.print(temperatureF);
-  #endif //ECHO_TO_SERIAL
-
-  // Log the estimated 'VCC' voltage by measuring the internal 1.1v ref
-  analogRead(BANDGAPREF); 
-  delay(10);
-  int refReading = analogRead(BANDGAPREF); 
-  float supplyvoltage = (bandgap_voltage * 1024) / refReading; 
-  
-  logfile.print(", ");
-  logfile.print(supplyvoltage);
-  #if ECHO_TO_SERIAL
-    Serial.print(", ");   
-    Serial.print(supplyvoltage);
-  #endif // ECHO_TO_SERIAL
-
-  logfile.println();
-  #if ECHO_TO_SERIAL
+    Serial.print(",");
+    Serial.print(temp_cold);
+    Serial.print(",");
+    Serial.print(temp_hot);
     Serial.println();
-  #endif // ECHO_TO_SERIAL
+  #endif //ECHO_TO_SERIAL
+
 
   digitalWrite(greenLEDpin, LOW);
 
