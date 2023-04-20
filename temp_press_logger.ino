@@ -13,7 +13,7 @@ uint32_t syncTime = 0; // time of last sync()
 #define ECHO_TO_SERIAL  1
 #define WAIT_TO_START   0 
 #define PRINT_TO_FILE   1 
-#define SET_TIME        1
+#define SET_TIME        0 
 #define SET_TIME        1
 #define READ_TEMPERATURE 1 
 
@@ -33,7 +33,7 @@ uint32_t syncTime = 0; // time of last sync()
 #define bandgap_voltage 1.1      // this is not super guaranteed but its not -too- off
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
-Adafruit_MCP9600 mcp;
+Adafruit_MCP9600 mcp, mcp2;
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
 const int chipSelect = 10;
@@ -68,7 +68,8 @@ void setup(void)
   }
   
   #if SET_TIME
-    RTC.adjust(DateTime(2023, 4, 20, 13, 41, 0));
+    RTC.adjust(DateTime(2023, 4, 20, 14, 58, 30));
+  //  RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   #endif //SET_TIME
   RTC.start();
 
@@ -173,11 +174,42 @@ void setup(void)
     Serial.println(mcp.getFilterCoefficient());
 
     mcp.enable(true);
-    //  if (! mcp2.begin(TC_ADDRESS_2)) {
-    //      Serial.println("Sensor 1 not found. Check wiring!");
-    //      while (1);
-    //  }
-    //  mcp2.enable(false);
+
+    // TC2
+    /* Initialise the driver with I2C_ADDRESS and the default I2C bus. */
+    if (! mcp2.begin(TC_ADDRESS_1)) {
+        Serial.println("Sensor 1 not found. Check wiring!");
+        while (1);
+    }
+    mcp2.setADCresolution(MCP9600_ADCRESOLUTION_18);
+    Serial.print("ADC resolution set to ");
+    switch (mcp2.getADCresolution()) {
+      case MCP9600_ADCRESOLUTION_18:   Serial.print("18"); break;
+      case MCP9600_ADCRESOLUTION_16:   Serial.print("16"); break;
+      case MCP9600_ADCRESOLUTION_14:   Serial.print("14"); break;
+      case MCP9600_ADCRESOLUTION_12:   Serial.print("12"); break;
+    }
+    Serial.println(" bits");
+
+    mcp2.setThermocoupleType(MCP9600_TYPE_K);
+    Serial.print("Thermocouple type set to ");
+    switch (mcp.getThermocoupleType()) {
+      case MCP9600_TYPE_K:  Serial.print("K"); break;
+      case MCP9600_TYPE_J:  Serial.print("J"); break;
+      case MCP9600_TYPE_T:  Serial.print("T"); break;
+      case MCP9600_TYPE_N:  Serial.print("N"); break;
+      case MCP9600_TYPE_S:  Serial.print("S"); break;
+      case MCP9600_TYPE_E:  Serial.print("E"); break;
+      case MCP9600_TYPE_B:  Serial.print("B"); break;
+      case MCP9600_TYPE_R:  Serial.print("R"); break;
+    }
+    Serial.println(" type");
+
+    mcp2.setFilterCoefficient(3);
+    Serial.print("Filter coefficient value set to: ");
+    Serial.println(mcp2.getFilterCoefficient());
+
+    mcp2.enable(true);
 
     Serial.println("Found MCP9600!");
   #endif //READ_TEMPERATURE
