@@ -10,10 +10,10 @@
 #define SYNC_INTERVAL 1000 // mills between calls to flush() - to write data to the card
 uint32_t syncTime = 0; // time of last sync(
 uint32_t m;
-#define ECHO_TO_SERIAL      1 
-#define WAIT_TO_START       1 
+#define ECHO_TO_SERIAL      0 
+#define WAIT_TO_START       0 
 #define PRINT_TO_FILE       1 
-#define SET_TIME            1 
+#define SET_TIME            0 
 #define READ_TEMPERATURE    1 
 #define READ_PRESSURE       1 
 #define TC_ADDRESS_1        (0x60)
@@ -24,10 +24,10 @@ uint32_t m;
 const int PressureScale = 20; //5V = 100bar
 const int PressurePin1 = A0;
 const int PressurePin2 = A1;
-int PressureVolt1 = 0;
-int PressureVolt2 = 0;
-int Pressure1 = 0;
-int Pressure2 = 0;
+float PressureVolt1 = 0;
+float PressureVolt2 = 0;
+float Pressure1 = 0;
+float Pressure2 = 0;
 
 // the digital pins that connect to the LEDs
 #define redLEDpin   4 
@@ -127,7 +127,7 @@ void setup(void)
     if (!SD.begin(chipSelect)) {
       error("Card failed, or not present");
     }
-    Serial.println("card initialized.");
+    logfile.println("card initialized.");
   
     // create a new file
     char filename[] = "LOGGER00.CSV";
@@ -151,28 +151,28 @@ void setup(void)
     logfile.print(starttime.year(), DEC);
     if (starttime.month() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(starttime.month(), DEC);
     if (starttime.day() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(starttime.day(), DEC);
     logfile.print("_");
     if (starttime.hour() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(starttime.hour(), DEC);
     if (starttime.minute() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(starttime.minute(), DEC);
     if (starttime.second() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(starttime.second(), DEC);
     logfile.println();
@@ -274,6 +274,8 @@ void loop(void){
   delay((LOG_INTERVAL -1) - (millis() % LOG_INTERVAL));
   digitalWrite(greenLEDpin, HIGH);
 
+  // fetch the time
+  now = RTC.now();
   #if READ_TEMPERATURE
     temp_cold = mcp.readAmbient();
     temp_hot = mcp.readThermocouple();
@@ -291,28 +293,28 @@ void loop(void){
     logfile.print(now.year(), DEC);
     if (now.month() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(now.month(), DEC);
     if (now.day() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(now.day(), DEC);
     logfile.print("_");
     if (now.hour() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(now.hour(), DEC);
     if (now.minute() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(now.minute(), DEC);
     if (now.second() < 10)
     {
-      Serial.print("0");
+      logfile.print("0");
     }
     logfile.print(now.second(), DEC);
     logfile.print(",");
@@ -370,9 +372,9 @@ void loop(void){
     Serial.print(",");
     Serial.print(temp_hot2);
     Serial.print(",");     
-    Serial.print(PressureVolt1);
+    Serial.print(Pressure1);
     Serial.print(",");    
-    Serial.print(PressureVolt2);
+    Serial.print(Pressure2);
     Serial.print(",");    
     m = millis();
     Serial.print(m);           // milliseconds since start
