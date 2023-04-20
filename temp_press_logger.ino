@@ -177,7 +177,7 @@ void setup(void)
 
     // TC2
     /* Initialise the driver with I2C_ADDRESS and the default I2C bus. */
-    if (! mcp2.begin(TC_ADDRESS_1)) {
+    if (! mcp2.begin(TC_ADDRESS_2)) {
         Serial.println("Sensor 1 not found. Check wiring!");
         while (1);
     }
