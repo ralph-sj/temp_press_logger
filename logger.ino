@@ -10,7 +10,7 @@
 #define SYNC_INTERVAL 1000 // mills between calls to flush() - to write data to the card
 uint32_t syncTime = 0; // time of last sync(
 uint32_t m;
-#define ECHO_TO_SERIAL      0 
+#define ECHO_TO_SERIAL      1 
 #define WAIT_TO_START       0 
 #define PRINT_TO_FILE       1 
 #define SET_TIME            0 
@@ -32,6 +32,7 @@ float Pressure2 = 0;
 // the digital pins that connect to the LEDs
 #define redLEDpin   4 
 #define greenLEDpin 3
+#define extLEDpin 13
 
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
@@ -56,6 +57,7 @@ void error(char *str)
   
   // red LED indicates error
   digitalWrite(redLEDpin, HIGH);
+  digitalWrite(extLEDpin, HIGH);
 
   while(1);
 }
@@ -63,7 +65,7 @@ void error(char *str)
 void setup(void)
 {
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println();
 
   if (! RTC.begin()) 
@@ -71,8 +73,13 @@ void setup(void)
     error("RTC failed");
   }
   
+  #if WAIT_TO_START
+    Serial.println("Type any character to start");
+    while (!Serial.available());
+  #endif //WAIT_TO_START
+  
   #if SET_TIME
-    RTC.adjust(DateTime(2023, 4, 20, 21, 54, 30)); // takes about 13  seconds to save the time
+    RTC.adjust(DateTime(2023, 9, 01, 9, 42, 00)); // takes about 13  seconds to save the time
   //  RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
     Serial.println("Date set.");
   #endif //SET_TIME
@@ -80,11 +87,8 @@ void setup(void)
   
   pinMode(redLEDpin, OUTPUT);
   pinMode(greenLEDpin, OUTPUT);
+  pinMode(extLEDpin, OUTPUT);
   
-  #if WAIT_TO_START
-    Serial.println("Type any character to start");
-    while (!Serial.available());
-  #endif //WAIT_TO_START
 
   starttime  = RTC.now();
   Serial.print("Logger started at ");
@@ -392,6 +396,8 @@ void loop(void){
   
   // blink LED to show we are syncing data to the card & updating FAT!
   digitalWrite(redLEDpin, HIGH);
+  digitalWrite(extLEDpin, HIGH);
   logfile.flush();
   digitalWrite(redLEDpin, LOW);
+  digitalWrite(extLEDpin, LOW);
 }
