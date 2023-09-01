@@ -2,5 +2,6 @@
     "port": "COM9",
     "board": "arduino:avr:uno",
     "programmer": "avrispmkii",
-    "sketch": "temp_press_logger.ino"
+    "sketch": "temp_press_logger.ino",
+    "output": "../build"
 }
