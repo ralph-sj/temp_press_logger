@@ -24,6 +24,8 @@ uint32_t m;
 const int PressureScale = 20; //5V = 100bar
 const int PressurePin1 = A0;
 const int PressurePin2 = A1;
+float PressureADC1 = 0;
+float PressureADC2 = 0;
 float PressureVolt1 = 0;
 float PressureVolt2 = 0;
 float Pressure1 = 0;
@@ -181,7 +183,7 @@ void setup(void)
     }
     logfile.print(starttime.second(), DEC);
     logfile.println();
-    logfile.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, pressure1, pressure2, millis");
+    logfile.println("datetime,temp_cold,temp_hot,temp_cold2,temp_hot2,pressure1,pressure2,millis");
   #else //PRINT_TO_FILE
     Serial.println("WARNING: DATA NOT LOGGED TO FILE");
     Serial.println();
@@ -190,7 +192,7 @@ void setup(void)
   
 
   #if ECHO_TO_SERIAL
-    Serial.println("datetime,temp_cold, temp_hot, temp_cold2, temp_hot2, pressure1, pressure2, millis");
+    Serial.println("datetime,temp_cold,temp_hot,temp_cold2,temp_hot2,pressure1,pressure2,millis");
   #endif //ECHO_TO_SERIAL
  
   // Thermocouple
@@ -288,10 +290,12 @@ void loop(void){
     temp_hot2 = mcp2.readThermocouple();
   #endif //READ_TEMPERATURE 
   #if READ_PRESSURE
-    PressureVolt1 = analogRead(PressurePin1);  
-    PressureVolt2 = analogRead(PressurePin2);  
-    Pressure1 = (PressureVolt1 * PressureScale)/AdcRange;
-    Pressure2 = (PressureVolt2 * PressureScale)/AdcRange;
+    PressureADC1 = analogRead(PressurePin1);  
+    PressureADC2 = analogRead(PressurePin2);  
+    PressureVolt1 = (PressureADC1 * 5)/AdcRange;  
+    PressureVolt2 = (PressureADC2 * 5)/AdcRange;  
+    Pressure1 = PressureVolt1 * PressureScale;
+    Pressure2 = PressureVolt2 * PressureScale;
   #endif //READ_PRESSURE
   
   #if PRINT_TO_FILE    
